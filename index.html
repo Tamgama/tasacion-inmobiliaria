@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Formulario 1 - Valoración</title>
+  <link rel="stylesheet" href="css/estilos.css" />
+</head>
+<body>
+  <header>
+    <h1>¿Cuánto vale tu casa?</h1>
+  </header>
+
+  <main>
+    <form id="form1">
+      <label>Dirección:
+        <input type="text" name="direccion" required />
+      </label>
+      <label>Tipo de inmueble:
+        <select name="tipo">
+          <option value="piso">Piso</option>
+          <option value="casa">Casa</option>
+        </select>
+      </label>
+      <button type="submit">Siguiente</button>
+
+        <label>Superficie (m²):
+          <input type="number" name="metros" required />
+        </label>
+        <label>Habitaciones:
+          <input type="number" name="habitaciones" required />
+        </label>
+        <label>Estado:
+          <select name="estado">
+            <option value="nuevo">Nuevo</option>
+            <option value="reformar">Para reformar</option>
+          </select>
+        </label>
+        <button type="submit">Ver resultado</button>
+
+
+      <section id="resultado">
+        <h2>Resultado de la valoración</h2>
+        <p id="resumen"></p>
+      </section>
+  
+
+        <h3>¿Quieres vender?</h3>
+        <label>Nombre:
+          <input type="text" name="nombre" required />
+        </label>
+        <label>Teléfono:
+          <input type="tel" name="telefono" required />
+        </label>
+        <button type="submit">Enviar</button>
+      </form>
+  </main>
+
+  <script src="js/form1.js"></script>
+</body>
+</html>
