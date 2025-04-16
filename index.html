@@ -4,32 +4,136 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>¿Cuánto vale tu casa?</title>
+  <script src="https://maps.googleapis.com/maps/api/js?key=TU_API_KEY&libraries=places&v=weekly"></script>
+  <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
   <link rel="stylesheet" href="styles.css" />
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC4xCtEaR1DK3BXUUHXqzXp0yZLpLrD60k&libraries=places" defer></script>
-  <script src="script.js" defer></script>
+  <script src="script.js"></script>
 </head>
 <body>
   <header class="barra-navegacion">
-    <img src="assets/logo.png" alt="Logo" class="logo" />
+    <img src="assets/logo.png" alt="Logo" class="logo"/>
+    <div class="nav-derecha">
+      <button class="btn-area-cliente" onclick="abrirDashboard()">Área de Cliente</button>
+    </div>
   </header>
 
   <main class="contenedor">
-    <h2>¿Cuánto vale tu casa?</h2>
-    
-    <form id="form-direccion">
-      <p>Te ofrecemos una estimación basada en datos reales del Catastro.</p>
-      <label for="direccion">Dirección:</label>
-      <input type="text" id="direccion" placeholder="Ej: Calle Mayor, 5" autocomplete="off" required />      <button type="submit">Consultar</button>
-    </form>
-
-    <div id="resultados-catastro"></div>
+    <div class="bloque-principal" data-aos="zoom-in">
+      <h2>¿Cuánto vale mi casa?</h2>
+      <p class="subtitulo">Tasación de viviendas online gratuita en 3 minutos</p>
   
-    <div id="formulario-segundo" class="oculto">
-      <h3>Selecciona tu vivienda</h3>
-      <div id="selectores-dinamicos"></div>
-      <div id="detalles-inmueble" class="oculto"></div>
+      <form id="form-direccion">
+        <h3>Busca tu dirección</h3>
+        <label for="direccion" class="oculto">Dirección:</label>
+        <input type="text" id="direccion" placeholder="Ej: Calle Mayor, 5" required />
+        <button type="submit">Consultar</button>
+      </form>
+  
+      <div id="resultados-catastro"></div>
+  
+      <div id="formulario-segundo" class="oculto">
+        <h3>Selecciona tu vivienda</h3>
+        <div id="selectores-dinamicos"></div>
+        <div id="detalles-inmueble" class="oculto"></div>
+      </div>
     </div>
 
+   <div class="info-beneficios" id="info-beneficios">
+          <div class="beneficios">
+            <div class="beneficio" data-aos="fade-up">
+              <div class="icono-svg">
+                <!-- ⏱️ Reloj SVG -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="#f4c542" viewBox="0 0 24 24">
+                  <path d="M13 2.05v-.551c0-.827-.673-1.5-1.5-1.5s-1.5.673-1.5 1.5v.551c-4.658.451-8 4.328-8 8.95 0 4.962 4.038 9 9 9s9-4.038 9-9c0-4.622-3.342-8.499-8-8.95zm-1.5 15.45c-3.589 0-6.5-2.911-6.5-6.5 0-3.31 2.506-6.062 5.75-6.473v5.973l3.536 2.122c.242.145.548.133.777-.03.229-.163.361-.438.337-.722l-.1-1.166-3.3-1.98v-5.297c3.244.411 5.75 3.163 5.75 6.473 0 3.589-2.911 6.5-6.5 6.5z"/>
+                </svg>
+              </div>
+              <h4>Rápido</h4>
+              <p>Resultados precisos en solo 3 minutos</p>
+            </div>
+        
+            <div class="beneficio" data-aos="fade-up" data-aos-delay="100">
+              <div class="icono-svg">
+                <!-- 💸 Dinero en mano SVG -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="#f4c542" viewBox="0 0 24 24">
+                  <path d="M18 14h-7.586l3.293-3.293c.195-.195.293-.451.293-.707 0-.256-.098-.512-.293-.707l-1.414-1.414c-.391-.391-1.023-.391-1.414 0l-5.586 5.586c-.391.391-.391 1.023 0 1.414l5.586 5.586c.391.391 1.023.391 1.414 0l1.414-1.414c.391-.391.391-1.023 0-1.414l-3.293-3.293h7.586c.553 0 1-.447 1-1s-.447-1-1-1z"/>
+                </svg>
+              </div>
+              <h4>Gratuito</h4>
+              <p>Sin compromiso ni pagos ocultos</p>
+            </div>
+        
+            <div class="beneficio" data-aos="fade-up" data-aos-delay="200">
+              <div class="icono-svg">
+                <!-- 🎯 Precisión SVG -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="#f4c542" viewBox="0 0 24 24">
+                  <path d="M12 8c-2.211 0-4 1.789-4 4 0 2.211 1.789 4 4 4s4-1.789 4-4c0-2.211-1.789-4-4-4zm0-8c-6.627 0-12 5.373-12 12 0 5.768 4.096 10.586 9.5 11.742v-2.018c-4.285-1.072-7.5-4.928-7.5-9.724 0-5.514 4.486-10 10-10s10 4.486 10 10c0 4.796-3.215 8.652-7.5 9.724v2.018c5.404-1.156 9.5-5.974 9.5-11.742 0-6.627-5.373-12-12-12z"/>
+                </svg>
+              </div>
+              <h4>Preciso</h4>
+              <p>Basado en datos actuales del mercado</p>
+            </div>
+          </div>
+        
+          <div class="especialistas" data-aos="fade-up" data-aos-delay="300">
+            <h3>Especialistas en Vista Alegre</h3>
+            <p>
+              Nuestro sistema está especializado en el mercado inmobiliario de <strong>Vista Alegre, Santa María de Gracia y La Flota</strong> de Murcia,
+              proporcionando valoraciones precisas basadas en transacciones reales.
+            </p>
+            <p>
+              A diferencia de otras valoraciones genéricas, nuestro algoritmo considera factores específicos de cada barrio,
+              la evolución de precios en cada calle y las características particulares de tu vivienda.
+            </p>
+          </div>
+        </div>
+        
+
   </main>
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-content">
+        <!-- Logo y descripción -->
+        <div class="footer-col footer-col-wide">
+          <p>
+            Inmobiliaria en Murcia especializada en saber cuánto cuesta tu casa.
+            Valoramos tu propiedad <strong>100% GRATIS y en solo 3 minutos</strong>.
+            Expertos en Vista Alegre, Santa María de Gracia y La Flota para vender vivienda al mejor precio.
+          </p>
+        </div>
+  
+        <!-- Enlaces rápidos -->
+        <div class="footer-col">
+          <h3>Enlaces Rápidos</h3>
+          <ul>
+            <li><a href="/">Inicio</a></li>
+            <li><a href="/valoracion">Valoración</a></li>
+            <li><a href="/login">Iniciar Sesión</a></li>
+            <li><a href="/#contact">Contacto</a></li>
+          </ul>
+        </div>
+  
+        <!-- Legal -->
+        <div class="footer-col">
+          <h3>Legal</h3>
+          <ul>
+            <li><a href="/privacidad">Política de Privacidad</a></li>
+            <li><a href="/cookies">Política de Cookies</a></li>
+            <li><a href="/terminos">Términos y Condiciones</a></li>
+          </ul>
+        </div>
+      </div>
+  
+      <!-- Información final -->
+      <div class="footer-bottom">
+        <p><strong>Promurcia Inmobiliarios</strong> | C/ Maestra María Maroto, 6, Vista Alegre, Murcia</p>
+        <p>
+          <a href="mailto:pro@promurcia.com">pro@promurcia.com</a> |
+          <a href="tel:+34622337098">+34 622 337 098</a>
+        </p>
+        <p>&copy; 2025 Promurcia Inmobiliarios. Todos los derechos reservados.</p>
+      </div>
+    </div>
+  </footer>
+
 </body>
 </html>

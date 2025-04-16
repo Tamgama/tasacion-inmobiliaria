@@ -1,21 +1,35 @@
 let selectedPlace = null;
 
-window.onload = () => {
+function abrirDashboard() {
+  window.location.href = "dashboard.html";
+}
+
+window.addEventListener("DOMContentLoaded", () => {
   const input = document.getElementById("direccion");
   const form = document.getElementById("form-direccion");
 
-  // Inicializar Google Places Autocomplete
+  if (!input || !form) {
+    console.warn("👉 Este script no es para esta página. Saltando lógica de dirección.");
+    return;
+  }
+
+  // Evitar envío si se pulsa Enter sin seleccionar dirección
+  input.addEventListener("keydown", function (e) {
+    const pacContainerVisible = document.querySelector(".pac-container")?.offsetParent !== null;
+    if (e.key === "Enter" && !pacContainerVisible) {
+      e.preventDefault();
+    }
+  });
+
   const autocomplete = new google.maps.places.Autocomplete(input, {
     types: ["address"],
     componentRestrictions: { country: "es" },
   });
 
-  // Guardar la dirección seleccionada
   autocomplete.addListener("place_changed", () => {
     selectedPlace = autocomplete.getPlace();
   });
 
-  // Al enviar el formulario
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -26,14 +40,18 @@ window.onload = () => {
 
     const componentes = selectedPlace.address_components;
     let nombreVia = "", numero = "";
-
     for (let comp of componentes) {
       if (comp.types.includes("route")) nombreVia = comp.long_name.toUpperCase();
       if (comp.types.includes("street_number")) numero = comp.long_name;
     }
 
+    if (!nombreVia || !numero) {
+      alert("No se pudo extraer correctamente la calle o número.");
+      return;
+    }
+
     const url = `https://ovc.catastro.meh.es/OVCServWeb/OVCWcfCallejero/COVCCallejero.svc/json/Consulta_DNP?Provincia=MURCIA&Municipio=MURCIA&TipoVia=CALLE&NombreVia=${encodeURIComponent(nombreVia)}&PrimerNumero=${numero}`;
-    
+
     try {
       const res = await fetch(url);
       const data = await res.json();
@@ -95,9 +113,8 @@ window.onload = () => {
         }
       };
 
-      // Escuchar los cambios en cualquiera de los selects
-      plantaSelector.addEventListener("change", mostrarDetalles);
-      puertaSelector.addEventListener("change", mostrarDetalles);
+      plantaSelector?.addEventListener("change", mostrarDetalles);
+      puertaSelector?.addEventListener("change", mostrarDetalles);
       if (bloqueSelector) bloqueSelector.addEventListener("change", mostrarDetalles);
 
     } catch (error) {
@@ -105,4 +122,4 @@ window.onload = () => {
       alert("Ocurrió un error al consultar el Catastro.");
     }
   });
-};
+});
