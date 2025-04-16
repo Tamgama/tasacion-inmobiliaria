@@ -3,59 +3,33 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Formulario 1 - Valoración</title>
-  <link rel="stylesheet" href="css/estilos.css" />
+  <title>¿Cuánto vale tu casa?</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC4xCtEaR1DK3BXUUHXqzXp0yZLpLrD60k&libraries=places" defer></script>
+  <script src="script.js" defer></script>
 </head>
 <body>
-  <header>
-    <h1>¿Cuánto vale tu casa?</h1>
+  <header class="barra-navegacion">
+    <img src="assets/logo.png" alt="Logo" class="logo" />
   </header>
 
-  <main>
-    <form id="form1">
-      <label>Dirección:
-        <input type="text" name="direccion" required />
-      </label>
-      <label>Tipo de inmueble:
-        <select name="tipo">
-          <option value="piso">Piso</option>
-          <option value="casa">Casa</option>
-        </select>
-      </label>
-      <button type="submit">Siguiente</button>
+  <main class="contenedor">
+    <h2>¿Cuánto vale tu casa?</h2>
+    
+    <form id="form-direccion">
+      <p>Te ofrecemos una estimación basada en datos reales del Catastro.</p>
+      <label for="direccion">Dirección:</label>
+      <input type="text" id="direccion" placeholder="Ej: Calle Mayor, 5" autocomplete="off" required />      <button type="submit">Consultar</button>
+    </form>
 
-        <label>Superficie (m²):
-          <input type="number" name="metros" required />
-        </label>
-        <label>Habitaciones:
-          <input type="number" name="habitaciones" required />
-        </label>
-        <label>Estado:
-          <select name="estado">
-            <option value="nuevo">Nuevo</option>
-            <option value="reformar">Para reformar</option>
-          </select>
-        </label>
-        <button type="submit">Ver resultado</button>
-
-
-      <section id="resultado">
-        <h2>Resultado de la valoración</h2>
-        <p id="resumen"></p>
-      </section>
+    <div id="resultados-catastro"></div>
   
+    <div id="formulario-segundo" class="oculto">
+      <h3>Selecciona tu vivienda</h3>
+      <div id="selectores-dinamicos"></div>
+      <div id="detalles-inmueble" class="oculto"></div>
+    </div>
 
-        <h3>¿Quieres vender?</h3>
-        <label>Nombre:
-          <input type="text" name="nombre" required />
-        </label>
-        <label>Teléfono:
-          <input type="tel" name="telefono" required />
-        </label>
-        <button type="submit">Enviar</button>
-      </form>
   </main>
-
-  <script src="js/form1.js"></script>
 </body>
 </html>
