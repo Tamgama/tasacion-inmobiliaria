@@ -1,3 +1,4 @@
+// sin coords
 let selectedPlace = null;
 
 function abrirDashboard() {

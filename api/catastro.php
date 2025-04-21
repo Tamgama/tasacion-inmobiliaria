@@ -1,3 +1,4 @@
+//sin coords
 <?php
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
@@ -20,7 +21,7 @@ if (isset($_GET['nombreVia']) && isset($_GET['numero'])) {
   $provincia = "MURCIA";
   $municipio = "MURCIA";
   $tiposVia = ['CALLE', 'CARRIL', 'AVENIDA', 'PLAZA', 'CAMINO', 'TRAVESIA'];
-  
+
   $url = "https://ovc.catastro.meh.es/OVCServWeb/OVCWcfCallejero/COVCCallejero.svc/json/Consulta_DNP?" .
          "Provincia=" . urlencode($provincia) .
          "&Municipio=" . urlencode($municipio) .
