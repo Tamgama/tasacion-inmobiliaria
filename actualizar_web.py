@@ -43,8 +43,6 @@ def sftp_upload(hostname, port, username, password, local_dir, remote_dir):
 # Configuración de la conexión
 hostname = 'home484808560.1and1-data.host'  # Cambia esto por la IP o dominio de tu servidor
 port = 22  # El puerto por defecto de SFTP es 22
-# username = 'u74332895'  # Nombre de usuario
-# password = 'Pr0Murc14#10.06.24'  # Contraseña
 base_dir = os.path.dirname(os.path.abspath(__file__))
 local_dir = os.path.join(base_dir, '../tasacion-inmobiliaria')  # Ruta local al web_2
 remote_dir = 'tasacion-inmobiliaria'  # Ruta remota en el servidor

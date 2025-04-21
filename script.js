@@ -13,14 +13,6 @@ window.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
-  // Evitar envío si se pulsa Enter sin seleccionar dirección
-  input.addEventListener("keydown", function (e) {
-    const pacContainerVisible = document.querySelector(".pac-container")?.offsetParent !== null;
-    if (e.key === "Enter" && !pacContainerVisible) {
-      e.preventDefault();
-    }
-  });
-
   const autocomplete = new google.maps.places.Autocomplete(input, {
     types: ["address"],
     componentRestrictions: { country: "es" },
@@ -28,6 +20,20 @@ window.addEventListener("DOMContentLoaded", () => {
 
   autocomplete.addListener("place_changed", () => {
     selectedPlace = autocomplete.getPlace();
+
+    if (selectedPlace?.formatted_address) {
+      localStorage.setItem("direccion_completa", selectedPlace.formatted_address);
+    }
+
+    const catastroURL = `https://www1.sedecatastro.gob.es/OVCFrames.aspx?TIPO=CONSULTA`;
+    window.open(catastroURL, "_blank");
+  });
+
+  input.addEventListener("keydown", function (e) {
+    const pacContainerVisible = document.querySelector(".pac-container")?.offsetParent !== null;
+    if (e.key === "Enter" && !pacContainerVisible) {
+      e.preventDefault();
+    }
   });
 
   form.addEventListener("submit", async (e) => {
@@ -50,73 +56,35 @@ window.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const url = `https://ovc.catastro.meh.es/OVCServWeb/OVCWcfCallejero/COVCCallejero.svc/json/Consulta_DNP?Provincia=MURCIA&Municipio=MURCIA&TipoVia=CALLE&NombreVia=${encodeURIComponent(nombreVia)}&PrimerNumero=${numero}`;
+    const url = `https://valoratucasa.promurcia.com/api/catastro-refcat.php?nombreVia=${encodeURIComponent(nombreVia)}&numero=${numero}`;
 
     try {
       const res = await fetch(url);
-      const data = await res.json();
-      const viviendas = data?.consulta_dnp_resultado?.lrcdnp?.rcdnp;
+      const refs = await res.json();
 
-      if (!Array.isArray(viviendas) || viviendas.length === 0) {
+      if (!Array.isArray(refs) || refs.length === 0) {
         alert("No se encontraron datos para esa dirección.");
         return;
       }
 
-      const bloques = [...new Set(viviendas.map(v => v.dt?.lcons?.blo || "Único"))];
-      const plantas = [...new Set(viviendas.map(v => v.dt?.lcons?.pto || "Baja"))];
-      const puertas = [...new Set(viviendas.map(v => v.dt?.lcons?.puerta).filter(Boolean))];
+      const refcat = refs[0].refcat;
+      const detalleRes = await fetch(`https://valoratucasa.promurcia.com/api/detalle-catastro.php?refcat=${refcat}`);
+      const inmueble = await detalleRes.json();
 
-      const selectsHTML = `
-        ${bloques.length > 1 ? `
-          <label>Bloque:
-            <select id="bloque">${bloques.map(b => `<option>${b}</option>`).join("")}</select>
-          </label>` : ""}
-        <label>Planta:
-          <select id="planta">${plantas.map(p => `<option>${p}</option>`).join("")}</select>
-        </label>
-        <label>Puerta:
-          <select id="puerta">${puertas.map(p => `<option>${p}</option>`).join("")}</select>
-        </label>
-      `;
+      const metros = inmueble.superficieConstruida || "N/D";
+      const anio = inmueble.anoConstruccion || "N/D";
+      const uso = inmueble.usoPrincipal || "N/D";
+      const clase = inmueble.claseUrbano || "Urbano";
 
-      document.getElementById("selectores-dinamicos").innerHTML = selectsHTML;
+      document.getElementById("selectores-dinamicos").innerHTML = "";
       document.getElementById("formulario-segundo").classList.remove("oculto");
-
-      const puertaSelector = document.getElementById("puerta");
-      const plantaSelector = document.getElementById("planta");
-      const bloqueSelector = document.getElementById("bloque");
-
-      const mostrarDetalles = () => {
-        const planta = plantaSelector.value;
-        const puerta = puertaSelector.value;
-        const bloque = bloqueSelector?.value || "Único";
-
-        const inmueble = viviendas.find(v =>
-          (v.dt?.lcons?.blo || "Único") === bloque &&
-          (v.dt?.lcons?.pto || "Baja") === planta &&
-          v.dt?.lcons?.puerta === puerta
-        );
-
-        if (inmueble) {
-          const metros = inmueble.debi?.sfc || "N/D";
-          const anio = inmueble.debi?.ant || "N/D";
-          const uso = inmueble.debi?.luso || "N/D";
-          const clase = inmueble.debi?.ucl || "Urbano";
-
-          document.getElementById("detalles-inmueble").innerHTML = `
-            <p><strong>Superficie:</strong> ${metros} m²</p>
-            <p><strong>Año construcción:</strong> ${anio}</p>
-            <p><strong>Uso:</strong> ${uso}</p>
-            <p><strong>Clase:</strong> ${clase}</p>
-          `;
-          document.getElementById("detalles-inmueble").classList.remove("oculto");
-        }
-      };
-
-      plantaSelector?.addEventListener("change", mostrarDetalles);
-      puertaSelector?.addEventListener("change", mostrarDetalles);
-      if (bloqueSelector) bloqueSelector.addEventListener("change", mostrarDetalles);
-
+      document.getElementById("detalles-inmueble").innerHTML = `
+        <p><strong>Superficie:</strong> ${metros} m²</p>
+        <p><strong>Año construcción:</strong> ${anio}</p>
+        <p><strong>Uso:</strong> ${uso}</p>
+        <p><strong>Clase:</strong> ${clase}</p>
+      `;
+      document.getElementById("detalles-inmueble").classList.remove("oculto");
     } catch (error) {
       console.error("Error al consultar Catastro:", error);
       alert("Ocurrió un error al consultar el Catastro.");
