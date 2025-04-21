@@ -1,47 +1,77 @@
 <?php
-// catastro-refcat.php
-
-header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
 
-$nombreVia = isset($_GET['nombreVia']) ? urlencode($_GET['nombreVia']) : '';
-$numero = isset($_GET['numero']) ? urlencode($_GET['numero']) : '';
+// 🧽 Función para quitar tildes y símbolos raros
+function normalizarTexto($texto) {
+  $texto = strtoupper($texto); // Mayúsculas
+  $texto = iconv('UTF-8', 'ASCII//TRANSLIT', $texto); // Quitar tildes y ñ
+  $texto = preg_replace('/[^A-Z0-9 ]/', '', $texto); // Eliminar símbolos raros
+  $texto = preg_replace('/\s+/', ' ', $texto); // Espacios múltiples
+  return trim($texto);
+}
+
+// Validación de entrada
+$nombreVia = isset($_GET['nombreVia']) ? $_GET['nombreVia'] : '';
+$numero = isset($_GET['numero']) ? $_GET['numero'] : '';
 
 if (!$nombreVia || !$numero) {
-  echo json_encode(['error' => 'Faltan parámetros']);
+  echo json_encode(['error' => 'Faltan parámetros: nombreVia y numero']);
   exit;
 }
 
-$url = "https://ovc.catastro.meh.es/OVCServWeb/OVCWcfCallejero/COVCCallejero.svc/json/Consulta_DNP?Provincia=MURCIA&Municipio=MURCIA&TipoVia=CALLE&NombreVia=$nombreVia&PrimerNumero=$numero";
+// Normalizar vía
+$nombreVia = normalizarTexto($nombreVia);
+$numero = urlencode(trim($numero));
 
-$ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, $url);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0');
-$response = curl_exec($ch);
+// Configuración fija
+$provincia = "MURCIA";
+$municipio = "MURCIA";
+$tipoVia = "CALLE"; // Si necesitas hacerlo dinámico, lo hablamos
 
-if (curl_errno($ch)) {
-  echo json_encode(['error' => 'Error al conectar con el Catastro']);
-  curl_close($ch);
+// Construir URL
+$url = "https://ovc.catastro.meh.es/OVCServWeb/OVCWcfCallejero/COVCCallejero.svc/json/Consulta_DNP?" .
+       "Provincia=" . urlencode($provincia) .
+       "&Municipio=" . urlencode($municipio) .
+       "&TipoVia=" . urlencode($tipoVia) .
+       "&NombreVia=" . urlencode($nombreVia) .
+       "&PrimerNumero=" . $numero;
+
+// Preparar petición HTTP
+$options = [
+  "http" => [
+    "method" => "GET",
+    "header" => "User-Agent: PromurciaBot/1.0\r\n"
+  ]
+];
+
+$context = stream_context_create($options);
+$response = @file_get_contents($url, false, $context);
+
+if (!$response) {
+  echo json_encode(['error' => 'No se pudo conectar con el Catastro.']);
   exit;
 }
 
-curl_close($ch);
 $data = json_decode($response, true);
+$viviendas = $data['consulta_dnp_resultado']['lrcdnp']['rcdnp'] ?? [];
 
-$registros = $data['consulta_dnp_resultado']['lrcdnp']['rcdnp'] ?? [];
-
-if (!$registros) {
-  echo json_encode(['error' => 'No se encontraron resultados']);
+if (!is_array($viviendas) || count($viviendas) === 0) {
+  echo json_encode([]); // Lista vacía si no hay resultados
   exit;
 }
 
-$referencias = array_map(function($r) {
+// Resultado limpio con datos útiles
+$resultado = array_map(function ($v) {
   return [
-    'refcat' => ($r['pc1'] ?? '') . ($r['pc2'] ?? ''),
-    'direccion' => ($r['ldt'] ?? '')
+    'refcat' => $v['rc'],
+    'direccion' => $v['ldt'] ?? null,
+    'bloque' => $v['dt']['lcons']['blo'] ?? 'Único',
+    'planta' => $v['dt']['lcons']['pto'] ?? 'Baja',
+    'puerta' => $v['dt']['lcons']['puerta'] ?? null
   ];
-}, $registros);
+}, $viviendas);
 
-echo json_encode($referencias);
+// Eliminar duplicados por refcat
+$resultadoUnico = array_values(array_unique($resultado, SORT_REGULAR));
+
+echo json_encode($resultadoUnico, JSON_UNESCAPED_UNICODE);
