@@ -53,7 +53,7 @@ window.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const refUrl = `https://valoratucasa.promurcia.com/api/catastro-refcat.php?nombreVia=${encodeURIComponent(nombreVia)}&numero=${numero}`;
+    const refUrl = `./api/catastro.php`;
 
     try {
       const refRes = await fetch(refUrl);
@@ -65,7 +65,7 @@ window.addEventListener("DOMContentLoaded", () => {
       }
 
       const refcat = refs[0].refcat;
-      const detalleUrl = `https://valoratucasa.promurcia.com/api/detalle-catastro.php?refcat=${refcat}`;
+      const detalleUrl = `./api/catastro.php`;
       const detalleRes = await fetch(detalleUrl);
       const viviendas = await detalleRes.json();
 
