@@ -1,4 +1,3 @@
-//sin coords
 <?php
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
@@ -14,19 +13,18 @@ function normalizarTexto($texto) {
   return trim($texto);
 }
 
-// 🔄 Modo 1: Buscar por nombre de calle y número
-if (isset($_GET['nombreVia']) && isset($_GET['numero'])) {
-  $nombreVia = normalizarTexto($_GET['nombreVia']);
+// 🔄 Modo 1: Buscar por 'via' y 'numero'
+if (isset($_GET['via']) && isset($_GET['numero']) && isset($_GET['barrio'])) {
+  $via = normalizarTexto($_GET['via']);
   $numero = urlencode(trim($_GET['numero']));
+  $barrio = normalizarTexto($_GET['barrio']); // Actualmente no se usa en la consulta, pero se podría incluir en filtros locales.
   $provincia = "MURCIA";
   $municipio = "MURCIA";
-  $tiposVia = ['CALLE', 'CARRIL', 'AVENIDA', 'PLAZA', 'CAMINO', 'TRAVESIA'];
 
   $url = "https://ovc.catastro.meh.es/OVCServWeb/OVCWcfCallejero/COVCCallejero.svc/json/Consulta_DNP?" .
          "Provincia=" . urlencode($provincia) .
          "&Municipio=" . urlencode($municipio) .
-         "&TipoVia=" . urlencode($tipoVia) .
-         "&NombreVia=" . urlencode($nombreVia) .
+         "&NombreVia=" . urlencode($via) .
          "&PrimerNumero=" . $numero;
 
   $opts = ["http" => ["method" => "GET", "header" => "User-Agent: PromurciaBot\r\n"]];
@@ -109,4 +107,5 @@ if (isset($_GET['refcat'])) {
 }
 
 // Si no se recibió ninguno de los parámetros válidos
-echo json_encode(['error' => 'Parámetros incorrectos. Usa nombreVia y numero o refcat.']);
+echo json_encode(['error' => 'Parámetros incorrectos. Usa via, numero y barrio o refcat.']);
+?>

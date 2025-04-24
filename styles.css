@@ -142,6 +142,7 @@ img {
 }
 
 /* Inputs */
+
 input[type="text"],
 input[type="email"],
 input[type="tel"],
@@ -153,6 +154,104 @@ select {
   border-radius: 6px;
   box-sizing: border-box;
 }
+
+/* ===============================
+   FORMULARIO DIRECCIÓN HOMOGENEIZADO
+   =============================== */
+
+#form-direccion .linea-direccion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+  
+#direccion {
+  flex: 2;
+  position: relative;
+  width: 100%;
+}
+  
+#numero-form {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+  
+#numero-form input {
+  width: 60px;
+  padding: 10px;
+  margin: 0;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+/* Para Chrome, Safari, Edge, Opera */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+
+/* Para Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+ 
+/* Resultados sugerencias */
+.direccion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+#resultados-catastro {
+  position: absolute;
+  top: 100%; /* Justo debajo del input */
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #ccc;
+  max-height: 150px;
+  overflow-y: auto;
+  z-index: 999;
+  margin-top: 2px;
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1); /* Opcional, pero le da un buen efecto */
+}
+
+#resultados-catastro div {
+  padding: 8px;
+  cursor: pointer;
+}
+
+#resultados-catastro div:hover {
+  background-color: #f4c542;
+  color: #333;
+  font-weight: bold;
+}
+
+  
+.direccion input[type="text"] {
+  flex: 2;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.direccion input[type="number"] {
+  width: 80px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
 
 /* Solo los botones de formularios ocupan todo el ancho */
 form button {
@@ -172,9 +271,14 @@ form button:hover {
   transform: scale(1.05);
 }
 
+form-direccion h3{
+  width: 100%;
+}
+
+
 /* ===============================
-   SECCIONES
-   =============================== */
+SECCIONES
+=============================== */
 
 /* Bloque principal */
 .bloque-principal {

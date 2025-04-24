@@ -4,10 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>¿Cuánto vale tu casa?</title>
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD3Dz_dw20SjM_OkiuS7xyBxt7MxDO0I_Q&libraries=places&v=weekly"></script>
   <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
   <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
   <script src="script.js"></script>
+
 </head>
 <body>
   <header class="barra-navegacion">
@@ -24,14 +25,19 @@
       <h2>¿Cuánto vale mi casa?</h2>
       <p class="subtitulo">Tasación de viviendas online gratuita en 3 minutos</p>
   
-      <form id="form-direccion">
+      <form id="form-direccion" onsubmit="return false">
         <h3>Busca tu dirección</h3>
-        <label for="direccion" class="oculto">Dirección:</label>
-        <input type="text" id="direccion" placeholder="Ej: Calle Mayor, 5" required />
-        <button type="submit">Consultar</button>
+        <div class="direccion">
+          <div id="direccion" style="flex: 2; position: relative;">
+            <input type="text" id="calle" placeholder="Ej: Calle Mayor" required />
+            <div id="resultados-catastro"></div>
+          </div>
+          <input type="number" id="numero" placeholder="0" required />
+        </div>
+        
+        <button type="button" id="consultar-principal">Consultar</button>
       </form>
-  
-      <div id="resultados-catastro"></div>
+      
   
       <div id="formulario-segundo" class="oculto">
         <h3>Selecciona tu vivienda</h3>

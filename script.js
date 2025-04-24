@@ -1,135 +1,52 @@
-// sin coords
-let selectedPlace = null;
+document.addEventListener('DOMContentLoaded', function() {
+  let calles = [];
+  let viaSeleccionada = null;
 
-function abrirDashboard() {
-  window.location.href = "dashboard.html";
-}
-
-window.addEventListener("DOMContentLoaded", () => {
-  const input = document.getElementById("direccion");
-  const form = document.getElementById("form-direccion");
-
-  if (!input || !form) {
-    console.warn("👉 Este script no es para esta página. Saltando lógica de dirección.");
-    return;
-  }
-
-  // Autocompletado Google
-  const autocomplete = new google.maps.places.Autocomplete(input, {
-    types: ["address"],
-    componentRestrictions: { country: "es" },
-  });
-
-  autocomplete.addListener("place_changed", () => {
-    selectedPlace = autocomplete.getPlace();
-    if (selectedPlace?.formatted_address) {
-      localStorage.setItem("direccion_completa", selectedPlace.formatted_address);
+  Papa.parse("callejero.csv", {
+    download: true,
+    header: true,
+    complete: function(results) {
+      calles = results.data;
     }
   });
 
-  input.addEventListener("keydown", function (e) {
-    const pacVisible = document.querySelector(".pac-container")?.offsetParent !== null;
-    if (e.key === "Enter" && !pacVisible) {
-      e.preventDefault();
+  const inputDireccion = document.getElementById('calle');
+  const resultados = document.getElementById('resultados-catastro');
+  const inputNumero = document.getElementById('numero');
+
+  inputDireccion.addEventListener('input', function() {
+    const valor = this.value.trim().toLowerCase();
+    resultados.innerHTML = '';
+
+    if (valor.length > 1 && calles.length > 0) {
+      const sugerencias = calles.filter(calle =>
+        calle && calle.via && calle.via.toLowerCase().includes(valor)
+      ).slice(0, 5);
+
+      sugerencias.forEach(sug => {
+        const item = document.createElement('div');
+        item.textContent = sug.via;
+        item.style.cursor = 'pointer';
+        item.style.padding = '5px';
+        item.style.borderBottom = '1px solid #ddd';
+
+        item.addEventListener('click', () => {
+          inputDireccion.value = sug.via;
+          resultados.innerHTML = '';
+          viaSeleccionada = sug;
+        });
+
+        resultados.appendChild(item);
+      });
     }
   });
 
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    if (!selectedPlace || !selectedPlace.address_components) {
-      alert("Selecciona una dirección del listado desplegable.");
-      return;
-    }
-
-    const componentes = selectedPlace.address_components;
-    let nombreVia = "", numero = "";
-    for (let comp of componentes) {
-      if (comp.types.includes("route")) nombreVia = comp.long_name;
-      if (comp.types.includes("street_number")) numero = comp.long_name;
-    }
-
-    if (!nombreVia || !numero) {
-      alert("No se pudo extraer correctamente la calle o número.");
-      return;
-    }
-
-    const refUrl = `./api/catastro.php`;
-
-    try {
-      const refRes = await fetch(refUrl);
-      const refs = await refRes.json();
-
-      if (!Array.isArray(refs) || refs.length === 0 || !refs[0]?.refcat) {
-        alert("No se encontraron datos para esa dirección.");
-        return;
-      }
-
-      const refcat = refs[0].refcat;
-      const detalleUrl = `./api/catastro.php`;
-      const detalleRes = await fetch(detalleUrl);
-      const viviendas = await detalleRes.json();
-
-      if (!Array.isArray(viviendas) || viviendas.length === 0) {
-        alert("No se encontraron detalles del inmueble.");
-        return;
-      }
-
-      const bloques = [...new Set(viviendas.map(v => v.bloque || "Único"))];
-      const plantas = [...new Set(viviendas.map(v => v.planta || "Baja"))];
-      const puertas = [...new Set(viviendas.map(v => v.puerta).filter(Boolean))];
-
-      const selectsHTML = `
-        ${bloques.length > 1 ? `
-          <label>Bloque:
-            <select id="bloque">${bloques.map(b => `<option>${b}</option>`).join("")}</select>
-          </label>` : ""}
-        <label>Planta:
-          <select id="planta">${plantas.map(p => `<option>${p}</option>`).join("")}</select>
-        </label>
-        <label>Puerta:
-          <select id="puerta">${puertas.map(p => `<option>${p}</option>`).join("")}</select>
-        </label>
-      `;
-
-      document.getElementById("selectores-dinamicos").innerHTML = selectsHTML;
-      document.getElementById("formulario-segundo").classList.remove("oculto");
-
-      const mostrarDetalles = () => {
-        const bloque = document.getElementById("bloque")?.value || "Único";
-        const planta = document.getElementById("planta")?.value || "Baja";
-        const puerta = document.getElementById("puerta")?.value;
-
-        const inmueble = viviendas.find(v =>
-          (v.bloque || "Único") === bloque &&
-          (v.planta || "Baja") === planta &&
-          v.puerta === puerta
-        );
-
-        const contenedor = document.getElementById("detalles-inmueble");
-
-        if (!inmueble) {
-          contenedor.innerHTML = "<p>No se encontraron datos para esa unidad</p>";
-          return;
-        }
-
-        contenedor.innerHTML = `
-          <p><strong>Superficie:</strong> ${inmueble.superficie || "N/D"} m²</p>
-          <p><strong>Año construcción:</strong> ${inmueble.anio || "N/D"}</p>
-          <p><strong>Uso:</strong> ${inmueble.uso || "N/D"}</p>
-          <p><strong>Clase:</strong> ${inmueble.clase || "Urbano"}</p>
-        `;
-        contenedor.classList.remove("oculto");
-      };
-
-      document.getElementById("planta")?.addEventListener("change", mostrarDetalles);
-      document.getElementById("puerta")?.addEventListener("change", mostrarDetalles);
-      document.getElementById("bloque")?.addEventListener("change", mostrarDetalles);
-
-      mostrarDetalles(); // Mostrar la primera opción por defecto
-    } catch (error) {
-      console.error("Error al consultar Catastro:", error);
-      alert("Ocurrió un error al consultar el Catastro.");
+  document.getElementById('consultar-principal').addEventListener('click', function() {
+    const numero = inputNumero.value;
+    if (viaSeleccionada && numero) {
+      console.log('Consultar Catastro:', viaSeleccionada.ViaCatastro, numero, viaSeleccionada.barrio);
+    } else {
+      alert('Selecciona una vía y escribe un número');
     }
   });
 });

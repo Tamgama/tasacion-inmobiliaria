@@ -1,28 +1,44 @@
 import pandas as pd
 import re
 
-# Cargar calles de Murcia capital ya extraídas
-df_murcia_capital = pd.read_csv("vias-murcia.csv", encoding='utf-8-sig')
+# Cargar tu CSV original
+df = pd.read_csv('callejero.csv')
 
-# Leer el archivo de calles con barrios
-barrios_dict = {}
-with open('murcia_streets.txt', 'r', encoding='utf-8') as f:
-    for line in f:
-        match = re.match(r"^(.*) \((.*)\)", line.strip())
-        if match:
-            calle = match.group(1).strip()
-            barrio = match.group(2).strip()
-            barrios_dict[calle.upper()] = barrio.upper()
+# Diccionario de prefijos
+prefijos = {
+    'AV': 'AVENIDA', 'AL': 'ALAMEDA', 'BO': 'BARRIO', 'CA': 'CAÑADA', 'CJ': 'CALLEJON',
+    'CL': 'CALLE', 'CM': 'CAMINO', 'CR': 'CARRETERA', 'CS': 'CASERIO', 'CT': 'CUESTA',
+    'DS': 'DISEMINADO', 'GV': 'GRANVIA', 'JR': 'JARDINES', 'LG': 'LUGAR', 'PA': 'PASARELA',
+    'PE': 'PARAJE', 'PG': 'POLIGONO', 'PL': 'POLIGONO', 'PJ': 'PASAJE', 'PR': 'PROLONGACION',
+    'PS': 'PASEO', 'PZ': 'PLAZA', 'SD': 'SENDA', 'TR': 'TRAVESIA', 'UR': 'URBANIZACION',
+    'VD': 'VIADUCTO', 'VR': 'VEREDA'
+}
 
-# Función para asignar barrio
-def asignar_barrio(row):
-    nombre_calle = f"{row['tipo_via']} {row['denominacion']}".strip().upper()
-    return barrios_dict.get(nombre_calle, "DESCONOCIDO")
+# Función para separar prefijo y limpiar vía
+def separar_prefijo(via):
+    match = re.match(r'^([A-Z]{2})\s+(.*)$', via.strip())
+    if match:
+        prefijo, nombre_via = match.groups()
+        tipo_via = prefijos.get(prefijo, 'DESCONOCIDO')
+        return pd.Series([tipo_via, nombre_via])
+    return pd.Series(['DESCONOCIDO', via.strip()])
 
-# Añadir la columna de barrio
-df_murcia_capital['barrio'] = df_murcia_capital.apply(asignar_barrio, axis=1)
+# Crear nueva columna formateada
+df['via'] = df.apply(lambda row: f"{row['TipoVia']} {row['NombreVia']}, {row['barrio']}", axis=1)
 
-# Guardar el nuevo CSV con barrios
-df_murcia_capital.to_csv("barrios.csv", index=False, encoding='utf-8-sig')
+df['ViaCatastro'] = df.apply(lambda row: f"{row['NombreVia']}({row['TipoVia']}) en {row['barrio']}", axis=1)
 
-print(f"CSV creado: barrios.csv con {len(df_murcia_capital)} calles y barrios.")
+
+# Mostrar resultado
+print(df[['TipoVia', 'NombreVia', 'barrio', 'via', 'ViaCatastro']].head())
+
+nuevo_orden = ['TipoVia', 'NombreVia', 'barrio', 'via', 'ViaCatastro']  # Puedes añadir otras columnas si tienes más
+
+# Reordenar el DataFrame
+df = df[nuevo_orden]
+
+# Guardar resultado si quieres:
+df.to_csv('callejero.csv', index=False)
+
+# Mostrar las primeras filas
+print(df.head())
