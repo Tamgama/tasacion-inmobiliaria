@@ -14,14 +14,12 @@ prefijos = {
     'VD': 'VIADUCTO', 'VR': 'VEREDA'
 }
 
-# Función para separar prefijo y limpiar vía
-def separar_prefijo(via):
-    match = re.match(r'^([A-Z]{2})\s+(.*)$', via.strip())
-    if match:
-        prefijo, nombre_via = match.groups()
-        tipo_via = prefijos.get(prefijo, 'DESCONOCIDO')
-        return pd.Series([tipo_via, nombre_via])
-    return pd.Series(['DESCONOCIDO', via.strip()])
+
+# Diccionario inverso: Tipo completo → Código corto
+tipo_a_prefijo = {v: k for k, v in prefijos.items()}
+
+# Añadir la columna 'CodigoPrefijo' según 'TipoVia'
+df['codigo'] = df['TipoVia'].apply(lambda tipo: tipo_a_prefijo.get(tipo, ''))
 
 # Crear nueva columna formateada
 df['via'] = df.apply(lambda row: f"{row['TipoVia']} {row['NombreVia']}, {row['barrio']}", axis=1)
@@ -29,16 +27,14 @@ df['via'] = df.apply(lambda row: f"{row['TipoVia']} {row['NombreVia']}, {row['ba
 df['ViaCatastro'] = df.apply(lambda row: f"{row['NombreVia']}({row['TipoVia']}) en {row['barrio']}", axis=1)
 
 
-# Mostrar resultado
-print(df[['TipoVia', 'NombreVia', 'barrio', 'via', 'ViaCatastro']].head())
 
-nuevo_orden = ['TipoVia', 'NombreVia', 'barrio', 'via', 'ViaCatastro']  # Puedes añadir otras columnas si tienes más
+nuevo_orden = ['codigo', 'TipoVia', 'NombreVia', 'barrio', 'via', 'ViaCatastro']  # Puedes añadir otras columnas si tienes más
 
 # Reordenar el DataFrame
 df = df[nuevo_orden]
 
 # Guardar resultado si quieres:
-df.to_csv('callejero.csv', index=False)
+df.to_csv('./callejero.csv', index=False)
 
 # Mostrar las primeras filas
 print(df.head())

@@ -13,20 +13,26 @@ function normalizarTexto($texto) {
   return trim($texto);
 }
 
-// 🔄 Modo 1: Buscar por 'via' y 'numero'
-if (isset($_GET['via']) && isset($_GET['numero']) && isset($_GET['barrio'])) {
-  $via = normalizarTexto($_GET['via']);
-  $numero = urlencode(trim($_GET['numero']));
-  $barrio = normalizarTexto($_GET['barrio']); // Actualmente no se usa en la consulta, pero se podría incluir en filtros locales.
+// 🔄 Modo 1: Buscar por 'via' y 'numero' y 'codigo'
+if (isset($_GET['via']) && isset($_GET['numero']) && isset($_GET['barrio']) && isset($_GET['codigo'])) {
   $provincia = "MURCIA";
   $municipio = "MURCIA";
 
-  $url = "https://ovc.catastro.meh.es/OVCServWeb/OVCWcfCallejero/COVCCallejero.svc/json/Consulta_DNP?" .
+  $via = strtoupper(trim($_GET['via']));
+  $numero = urlencode(trim($_GET['numero']));
+  $barrio = strtoupper(trim($_GET['barrio']));
+  $codigo = strtoupper(trim($_GET['codigo']));
+
+  // Extraer codigo y nombre de vía (ejemplo: 'DISEMINADO' + 'CARRIL ALIAGAS')
+  $partes = preg_split('/\s+/', $via, 2);
+  $calle = $via;
+
+  $url = "https://ovc.catastro.meh.es/OVCServWeb/OVCWcfCallejero/COVCCallejero.svc/json/Consulta_DNPLOC?" .
          "Provincia=" . urlencode($provincia) .
          "&Municipio=" . urlencode($municipio) .
-         "&NombreVia=" . urlencode($via) .
-         "&PrimerNumero=" . $numero;
-
+         "&codigo=" . urlencode($codigo) .
+         "&Calle=" . urlencode($calle) .
+         "&Numero=" . urlencode($numero);
   $opts = ["http" => ["method" => "GET", "header" => "User-Agent: PromurciaBot\r\n"]];
   $context = stream_context_create($opts);
   $response = @file_get_contents($url, false, $context);
@@ -37,7 +43,7 @@ if (isset($_GET['via']) && isset($_GET['numero']) && isset($_GET['barrio'])) {
   }
 
   $data = json_decode($response, true);
-  $viviendas = $data['consulta_dnp_resultado']['lrcdnp']['rcdnp'] ?? [];
+  $viviendas = $data['consulta_dnplocResult']['lrcdnp']['rcdnp'] ?? [];
 
   if (!is_array($viviendas) || count($viviendas) === 0) {
     echo json_encode([]);
@@ -46,7 +52,7 @@ if (isset($_GET['via']) && isset($_GET['numero']) && isset($_GET['barrio'])) {
 
   $resultado = array_map(function ($v) {
     return [
-      'refcat' => $v['rc'],
+      'refcat' => $v['rc'] ?? null,
       'direccion' => $v['ldt'] ?? null,
       'bloque' => $v['dt']['lcons']['blo'] ?? 'Único',
       'planta' => $v['dt']['lcons']['pto'] ?? 'Baja',
