@@ -63,6 +63,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const via = inputDireccion.value.trim().toUpperCase();
     const numero = inputNumero.value.trim();
     const bloque = document.getElementById('bloque').value.trim();
+    const escalera = document.getAnimations('escalera').values.trim();
     const planta = document.getElementById('planta').value.trim();
     const puerta = document.getElementById('puerta').value.trim();
 
@@ -71,10 +72,10 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
 
-    console.log('Enviar a Catastro:', { via, numero, bloque, planta, puerta });
+    console.log('Enviar a Catastro:', { via, numero, bloque, escalera, planta, puerta });
 
-    const barrio = viaSeleccionada ? viaSeleccionada.barrio : "VISTA ALEGRE";
-    const codigo = viaSeleccionada ? viaSeleccionada.codigo : "30007";
+    // const barrio = viaSeleccionada ? viaSeleccionada.barrio : "VISTA ALEGRE";
+    // const codigo = viaSeleccionada ? viaSeleccionada.codigo : "30007";
 
     const params = new URLSearchParams({
       via: via,
@@ -91,13 +92,14 @@ document.addEventListener('DOMContentLoaded', function() {
           const coincidencias = data.filter(item =>
             item.bloque.trim() === (bloque || 'Único') &&
             item.planta.trim() === planta &&
-            item.puerta.trim() === puerta
+            item.puerta.trim() === puerta &&
+            (!item.escalera || item.escalera.trim() === escalera)
           );
 
           if (coincidencias.length === 1) {
             obtenerDetallesPorRefCat(coincidencias[0].refcat);
           } else {
-            alert('No se encontró coincidencia exacta para bloque/planta/puerta.');
+            alert('No se encontró coincidencia exacta para bloque/escalera/planta/puerta.');
           }
         } else {
           alert('No se encontraron datos en Catastro');
@@ -140,6 +142,7 @@ document.addEventListener('DOMContentLoaded', function() {
       <p><strong>Uso:</strong> ${bien.uso}</p>
       <p><strong>Clase:</strong> ${bien.clase}</p>
       <p><strong>Bloque:</strong> ${bien.bloque}</p>
+      <p><strong>Escalera:</strong> ${bien.escalera || ''}</p>
       <p><strong>Planta:</strong> ${bien.planta}</p>
       <p><strong>Puerta:</strong> ${bien.puerta}</p>
       <p><strong>Ref. Catastral:</strong> ${bien.refcat}</p>
