@@ -2,7 +2,6 @@ document.addEventListener('DOMContentLoaded', function() {
   let calles = [];
   let viaSeleccionada = null;
 
-  // cargar csv
   Papa.parse("callejero.csv", {
     download: true,
     header: true,
@@ -14,9 +13,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const inputDireccion = document.getElementById('calle');
   const resultados = document.getElementById('resultados-catastro');
   const inputNumero = document.getElementById('numero');
-  const bloquePlantaPuertaDiv = document.getElementById('bloque-planta-puerta'); // corregido
+  const bloquePlantaPuertaDiv = document.getElementById('bloque-planta-puerta');
 
-  // cambios para mostrar la siguiente parte del formulario
   inputDireccion.addEventListener('input', function() {
     const valor = this.value.trim().toLowerCase();
     resultados.innerHTML = '';
@@ -49,24 +47,21 @@ document.addEventListener('DOMContentLoaded', function() {
   function verificarMostrarCamposExtra() {
     const direccionValida = inputDireccion.value.trim().length > 0;
     const numeroValido = inputNumero.value.trim().length > 0;
-
     if (direccionValida && numeroValido) {
-      // Mostrar campos extra si ambos están rellenos
       bloquePlantaPuertaDiv.classList.remove('oculto');
     } else {
       bloquePlantaPuertaDiv.classList.add('oculto');
     }
   }
 
-  // Cuando se haga clic en consultar → se hace la llamada real
   document.getElementById('consultar-principal').addEventListener('click', function () {
-    let via = inputDireccion.value.trim().toUpperCase().split(',')[0];
+    let direccion = inputDireccion.value.trim().toUpperCase();
     const numero = inputNumero.value.trim();
     const bloque = document.getElementById('bloque').value.trim();
     const escalera = document.getElementById('escalera').value.trim();
     const planta = document.getElementById('planta').value.trim();
     const puerta = document.getElementById('puerta').value.trim();
-  
+
     const dicSiglas = {
       'AVENIDA': 'AV', 'ALAMEDA': 'AL', 'BARRIO': 'BO', 'CAÑADA': 'CA', 'CALLEJON': 'CJ',
       'CALLE': 'CL', 'CAMINO': 'CM', 'CARRETERA': 'CR', 'CASERIO': 'CS', 'CUESTA': 'CT',
@@ -75,10 +70,13 @@ document.addEventListener('DOMContentLoaded', function() {
       'PASEO': 'PS', 'PLAZA': 'PZ', 'SENDA': 'SD', 'TRAVESIA': 'TR', 'URBANIZACION': 'UR',
       'VIADUCTO': 'VD', 'VEREDA': 'VR'
     };
-  
-    let sigla = "CL"; // por defecto
+
+    let sigla = "CL";
+    let via = direccion;
+
     if (viaSeleccionada && viaSeleccionada.sigla) {
       sigla = viaSeleccionada.sigla;
+      via = viaSeleccionada.via;
     } else {
       const tipo = via.split(' ')[0];
       if (dicSiglas[tipo]) {
@@ -86,115 +84,47 @@ document.addEventListener('DOMContentLoaded', function() {
         via = via.replace(tipo, '').trim();
       }
     }
-  
+
     if (!via || !numero || !planta || !puerta) {
       alert('Rellena todos los campos obligatorios.');
       return;
     }
-  
-    console.log('Enviar a Catastro:', { via, numero, sigla, bloque, escalera, planta, puerta });
-  
-    const params = new URLSearchParams({
-      Provincia: "MURCIA",
-      Municipio: "MURCIA",
-      TipoVia: sigla,
-      NombreVia: via,
-      Numero: numero
-    });
-    
-    const urlCatastro = `https://ovc.catastro.meh.es/OVCServWeb/OVCWcfCallejero/COVCCallejero.svc/json/Consulta_DNPLOC?${params.toString()}`;
-    
-    fetch(urlCatastro)
+
+    fetch(`./api/catastro.php?via=${encodeURIComponent(via)}&numero=${numero}&sigla=${sigla}`)
       .then(response => response.json())
       .then(data => {
-        console.log('Respuesta Catastro REST:', data);
-    
-        const lista = data.consulta_dnp?.lrcdnp?.rcdnp || [];
-    
-        const resultado = lista.map(item => {
-          const refcat = item.rc || item.idbi?.rc?.pc1 + item.idbi?.rc?.pc2;
-          const loint = item.dt?.locs?.lous?.lourb?.loint || item.dt?.loint || {};
-          return {
-            refcat: refcat,
-            bloque: loint.bq || 'Único',
-            escalera: loint.es || '',
-            planta: loint.pt || '',
-            puerta: loint.pu || ''
-          };
-        });
-    
-        if (resultado.length > 0) {
-          generarSelectoresDinamicos(resultado);
+        if (Array.isArray(data) && data.length > 0) {
+          generarSelectoresDinamicos(data);
         } else {
           alert('No se encontraron inmuebles para esta dirección.');
         }
       })
       .catch(error => {
-        console.error('Error al consultar Catastro REST:', error);
+        console.error('Error al consultar el Catastro:', error);
         alert('No se pudo conectar con el Catastro.');
       });
-    
-  
-    // fetch(`./api/catastro.php?${params.toString()}`)
-    //   .then(response => response.json())
-    //   .then(data => {
-    //     console.log('Respuesta Catastro:', data);
-    //     if (Array.isArray(data) && data.length > 0) {
-    //       generarSelectoresDinamicos(data);
-    //     } else {
-    //       alert('No se encontraron datos en Catastro');
-    //     }
-    //   })
-    //   .catch(error => {
-    //     console.error('Error al consultar Catastro:', error);
-    //     alert('Error al consultar el Catastro');
-    //   });
-      
 
     function generarSelectoresDinamicos(dataOriginal) {
-      const selectoresDinamicosDiv = document.getElementById('selectores-dinamicos');
-      selectoresDinamicosDiv.innerHTML = ''; // limpiar
-    
-      const bloques = [...new Set(dataOriginal.map(item => {
-        const loint = item.dt?.locs?.lous?.lourb?.loint || item.dt?.loint || {};
-        return loint.bq || 'Único';
-      }))];
-    
-      const escaleras = [...new Set(dataOriginal.map(item => {
-        const loint = item.dt?.locs?.lous?.lourb?.loint || item.dt?.loint || {};
-        return loint.es || '';
-      }))];
-    
-      const plantas = [...new Set(dataOriginal.map(item => {
-        const loint = item.dt?.locs?.lous?.lourb?.loint || item.dt?.loint || {};
-        return loint.pt || '';
-      }))];
-    
-      const puertas = [...new Set(dataOriginal.map(item => {
-        const loint = item.dt?.locs?.lous?.lourb?.loint || item.dt?.loint || {};
-        return loint.pu || '';
-      }))];
-    
-      const crearSelect = (id, label, opciones) => {
-        const wrapper = document.createElement('label');
-        wrapper.textContent = label + ': ';
+      const div = document.getElementById('selectores-dinamicos');
+      div.innerHTML = '';
+
+      const campos = ['bloque', 'escalera', 'planta', 'puerta'];
+      campos.forEach(campo => {
+        const opciones = [...new Set(dataOriginal.map(item => item[campo] || ''))];
+        const label = document.createElement('label');
+        label.textContent = campo.charAt(0).toUpperCase() + campo.slice(1) + ': ';
         const select = document.createElement('select');
-        select.id = id;
-        opciones.forEach(valor => {
+        select.id = campo;
+        opciones.forEach(val => {
           const opt = document.createElement('option');
-          opt.value = valor;
-          opt.textContent = valor || '—';
+          opt.value = val;
+          opt.textContent = val || '—';
           select.appendChild(opt);
         });
-        wrapper.appendChild(select);
-        return wrapper;
-      };
-    
-      selectoresDinamicosDiv.appendChild(crearSelect('bloque', 'Bloque', bloques));
-      selectoresDinamicosDiv.appendChild(crearSelect('escalera', 'Escalera', escaleras));
-      selectoresDinamicosDiv.appendChild(crearSelect('planta', 'Planta', plantas));
-      selectoresDinamicosDiv.appendChild(crearSelect('puerta', 'Puerta', puertas));
-    
+        label.appendChild(select);
+        div.appendChild(label);
+      });
+
       const boton = document.createElement('button');
       boton.textContent = 'Confirmar inmueble';
       boton.type = 'button';
@@ -203,59 +133,39 @@ document.addEventListener('DOMContentLoaded', function() {
         const escalera = document.getElementById('escalera').value;
         const planta = document.getElementById('planta').value;
         const puerta = document.getElementById('puerta').value;
-    
-        const coincidencias = dataOriginal.filter(item => {
-          const loint = item.dt?.locs?.lous?.lourb?.loint || item.dt?.loint || {};
-          return (
-            (loint.bq || 'Único').trim() === bloque &&
-            (loint.pt || '').trim() === planta &&
-            (loint.pu || '').trim() === puerta &&
-            (!loint.es || loint.es.trim() === escalera)
-          );
-        });
-    
-        if (coincidencias.length === 1) {
-          const bien = coincidencias[0];
-          const refcat = bien.rc || bien.idbi?.rc?.pc1 + bien.idbi?.rc?.pc2;
-          const loint = bien.dt?.locs?.lous?.lourb?.loint || bien.dt?.loint || {};
-          const debi = bien.debi || {};
-    
-          mostrarDetallesInmueble({
-            refcat: refcat,
-            bloque: loint.bq || 'Único',
-            escalera: loint.es || '',
-            planta: loint.pt || '',
-            puerta: loint.pu || '',
-            uso: debi.luso || 'Desconocido',
-            anio: debi.ant || 'Desconocido',
-            superficie: debi.sfc || 'Desconocida',
-            clase: debi.ucl || '—'
-          });
+
+        const ref = dataOriginal.find(item =>
+          item.bloque === bloque &&
+          item.planta === planta &&
+          item.puerta === puerta &&
+          (!item.escalera || item.escalera === escalera)
+        );
+
+        if (ref && ref.refcat) {
+          fetch(`./api/catastro.php?refcat=${ref.refcat}`)
+            .then(r => r.json())
+            .then(detalles => mostrarDetallesInmueble(detalles))
+            .catch(err => alert('Error al obtener detalles.'));
         } else {
-          alert('No se encontró coincidencia exacta para bloque/escalera/planta/puerta.');
+          alert('No se encontró coincidencia exacta.');
         }
       });
-    
-      selectoresDinamicosDiv.appendChild(document.createElement('br'));
-      selectoresDinamicosDiv.appendChild(boton);
+
+      div.appendChild(document.createElement('br'));
+      div.appendChild(boton);
       document.getElementById('formulario-segundo').classList.remove('oculto');
-    }          
+    }
   });
-  
-  // 🔎 Esta función va FUERA del addEventListener
+
   function mostrarDetallesInmueble(bien) {
-    const detallesDiv = document.getElementById('detalles-inmueble');
-    detallesDiv.classList.remove('oculto');
-    detallesDiv.innerHTML = `
+    const div = document.getElementById('detalles-inmueble');
+    div.classList.remove('oculto');
+    div.innerHTML = `
       <p><strong>Superficie:</strong> ${bien.superficie} m²</p>
       <p><strong>Año Construcción:</strong> ${bien.anio}</p>
       <p><strong>Uso:</strong> ${bien.uso}</p>
       <p><strong>Clase:</strong> ${bien.clase}</p>
-      <p><strong>Bloque:</strong> ${bien.bloque}</p>
-      <p><strong>Escalera:</strong> ${bien.escalera || ''}</p>
-      <p><strong>Planta:</strong> ${bien.planta}</p>
-      <p><strong>Puerta:</strong> ${bien.puerta}</p>
       <p><strong>Ref. Catastral:</strong> ${bien.refcat}</p>
     `;
   }
-});  
+});

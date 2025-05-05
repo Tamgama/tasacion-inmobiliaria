@@ -1,27 +1,31 @@
 <?php
-header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *'); // Cambiar por tu dominio en producción
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-// 🧽 Función para quitar tildes y símbolos raros
+// 🔧 Quita tildes, símbolos raros, y pasa a mayúsculas
 function normalizarTexto($texto) {
-  $texto = strtoupper($texto); // Mayúsculas
+  $texto = strtoupper($texto);
   $texto = iconv('UTF-8', 'ASCII//TRANSLIT', $texto); // Quitar tildes y ñ
-  $texto = preg_replace('/[^A-Z0-9 ]/', '', $texto); // Eliminar símbolos raros
-  $texto = preg_replace('/\s+/', ' ', $texto); // Espacios múltiples
-  return trim($texto);
+  $texto = preg_replace('/[^A-Z0-9 ]/', '', $texto);
+  return trim(preg_replace('/\s+/', ' ', $texto));
 }
 
-// 🔄 Modo 1: Buscar por 'via', 'numero', 'barrio' y 'sigla'
-if (isset($_GET['via']) && isset($_GET['numero']) && isset($_GET['sigla'])) {
+// ==============================
+// 🔍 MODO 1: Buscar por dirección
+// ==============================
+if (isset($_GET['via'], $_GET['numero'], $_GET['sigla'])) {
   $provincia = "MURCIA";
   $municipio = "MURCIA";
-
-  $via = strtoupper(trim($_GET['via']));
-  $numero = urlencode(trim($_GET['numero']));
-  // $barrio = strtoupper(trim($_GET['barrio']));
+  $via = normalizarTexto($_GET['via']);
+  $numero = trim($_GET['numero']);
   $sigla = strtoupper(trim($_GET['sigla']));
+
+  if (!$via || !$numero || !$sigla) {
+    echo json_encode(['error' => 'Faltan parámetros obligatorios']);
+    exit;
+  }
 
   $url = "https://ovc.catastro.meh.es/OVCServWeb/OVCWcfCallejero/COVCCallejero.svc/json/Consulta_DNPLOC?" .
          "Provincia=" . urlencode($provincia) .
@@ -29,10 +33,6 @@ if (isset($_GET['via']) && isset($_GET['numero']) && isset($_GET['sigla'])) {
          "&Sigla=" . urlencode($sigla) .
          "&Calle=" . urlencode($via) .
          "&Numero=" . urlencode($numero);
-
-         echo json_encode(['debug_url' => $url]);
-         exit;
-         
 
   $opts = ["http" => ["method" => "GET", "header" => "User-Agent: PromurciaBot\r\n"]];
   $context = stream_context_create($opts);
@@ -57,15 +57,17 @@ if (isset($_GET['via']) && isset($_GET['numero']) && isset($_GET['sigla'])) {
       'direccion' => $v['ldt'] ?? null,
       'bloque' => $v['dt']['lcons']['blo'] ?? 'Único',
       'planta' => $v['dt']['lcons']['pto'] ?? 'Baja',
-      'puerta' => $v['dt']['lcons']['puerta'] ?? null
+      'puerta' => $v['dt']['lcons']['puerta'] ?? ''
     ];
   }, $viviendas);
 
-  echo json_encode(array_values(array_unique($resultado, SORT_REGULAR)), JSON_UNESCAPED_UNICODE);
+  echo json_encode($resultado, JSON_UNESCAPED_UNICODE);
   exit;
 }
 
-// 🔄 Modo 2: Buscar detalles por referencia catastral
+// ==================================
+// 🔍 MODO 2: Buscar por Ref. Catastral
+// ==================================
 if (isset($_GET['refcat'])) {
   $refcat = strtoupper(str_replace([' ', '-'], '', trim($_GET['refcat'])));
   if (!$refcat) {
@@ -73,7 +75,7 @@ if (isset($_GET['refcat'])) {
     exit;
   }
 
-  // Primero intentamos la API JSON
+  // 🚀 Primero intentamos la API oficial JSON
   $url = "https://ovc.catastro.meh.es/OVCServWeb/OVCWcfCallejero/COVCCallejero.svc/json/Consulta_DNPRC?RefCat=" . urlencode($refcat);
   $ch = curl_init();
   curl_setopt($ch, CURLOPT_URL, $url);
@@ -81,18 +83,17 @@ if (isset($_GET['refcat'])) {
   curl_setopt($ch, CURLOPT_TIMEOUT, 10);
   curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0');
   $response = curl_exec($ch);
+  curl_close($ch);
 
-  if (curl_errno($ch)) {
-    echo json_encode(['error' => 'Error al conectar con el Catastro', 'detalle' => curl_error($ch)]);
-    curl_close($ch);
+  if (!$response) {
+    echo json_encode(['error' => 'Error al conectar con la API del Catastro']);
     exit;
   }
-  curl_close($ch);
 
   $data = json_decode($response, true);
   $viviendas = $data['consulta_dnprcResult']['lrcdnp']['rcdnp'] ?? [];
 
-  if (is_array($viviendas) && count($viviendas) > 0) {
+  if (is_array($viviendas) && count($viviendas) > 0 && isset($viviendas[0]['debi'])) {
     $resultado = array_map(function ($v) {
       return [
         'refcat' => $v['rc'] ?? null,
@@ -106,11 +107,11 @@ if (isset($_GET['refcat'])) {
       ];
     }, $viviendas);
 
-    echo json_encode(array_values(array_unique($resultado, SORT_REGULAR)), JSON_UNESCAPED_UNICODE);
+    echo json_encode($resultado, JSON_UNESCAPED_UNICODE);
     exit;
   }
 
-  // Si no hay datos válidos, intentamos hacer scraping del HTML
+  // 🧽 Si la API no devuelve datos, hacemos scraping HTML como respaldo
   $htmlUrl = "https://www1.sedecatastro.gob.es/CYCBienInmueble/OVCListaBienes.aspx?rc=" . urlencode($refcat);
   $html = @file_get_contents($htmlUrl);
 
@@ -124,33 +125,26 @@ if (isset($_GET['refcat'])) {
   $dom->loadHTML($html);
   $xpath = new DOMXPath($dom);
 
-  function obtenerDato($xpath, $titulo) {
-    $nodo = $xpath->query('//span[@data-original-title="' . $titulo . '"]');
+  function extraerDato($xpath, $titulo) {
+    $nodo = $xpath->query('//div[@class="form-group"]//span[contains(text(), "' . $titulo . '")]/../following-sibling::div//label');
     if ($nodo->length > 0) {
       return trim($nodo->item(0)->textContent);
     }
     return null;
   }
 
-  $localizacion = obtenerDato($xpath, 'Localización');
-  $uso = obtenerDato($xpath, 'Uso');
-  $superficie = obtenerDato($xpath, 'Superficie construida');
-  $coeficiente = obtenerDato($xpath, 'Coeficiente de participación');
-  $anio = obtenerDato($xpath, 'Año construcción');
-
   $resultado = [
     'refcat' => $refcat,
-    'localizacion' => $localizacion,
-    'uso' => $uso,
-    'superficie' => $superficie,
-    'coeficiente' => $coeficiente,
-    'anio' => $anio
+    'localizacion' => extraerDato($xpath, 'Localización'),
+    'clase' => extraerDato($xpath, 'Clase'),
+    'uso' => extraerDato($xpath, 'Uso principal'),
+    'superficie' => extraerDato($xpath, 'Superficie construida'),
+    'anio' => extraerDato($xpath, 'Año construcción')
   ];
 
   echo json_encode($resultado, JSON_UNESCAPED_UNICODE);
   exit;
 }
 
-// Si no se recibió ninguno de los parámetros válidos
-echo json_encode(['error' => 'Parámetros incorrectos. Usa via, numero y barrio o refcat.']);
-?>
+// ❌ Ningún parámetro válido recibido
+echo json_encode(['error' => 'Parámetros incorrectos. Usa via, numero y sigla o refcat.']);
