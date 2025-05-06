@@ -252,6 +252,58 @@ input[type=number] {
   font-size: 1rem;
 }
 
+#extras-adicionales {
+  margin-top: 30px;
+  text-align: center;
+}
+
+.botones-extras {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 15px;
+}
+
+.btn-extra {
+  background-color: #ccc;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.btn-extra:hover {
+  background-color: #aaa;
+  transform: scale(1.05);
+}
+
+.btn-extra.seleccionado {
+  background-color: #5e5e5e;
+  color: white;
+}
+
+#formulario-caracteristicas {
+  margin-top: 20px;
+  text-align: left;
+}
+
+#formulario-caracteristicas label {
+  display: block;
+  margin: 10px 0 5px;
+  font-weight: bold;
+}
+
+#formulario-caracteristicas select,
+#formulario-caracteristicas input[type="number"] {
+  width: 100%;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
 
 /* Solo los botones de formularios ocupan todo el ancho */
 form button {

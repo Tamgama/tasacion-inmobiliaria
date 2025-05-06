@@ -5,6 +5,9 @@ app = Flask(__name__)
 
 @app.route('/api/catastro/buscar', methods=['GET'])
 def buscar_catastro():
+    """
+    Fase 1: busca inmuebles del portal (via, numero, sigla)
+    """
     try:
         via = normalizar_texto(request.args.get('via'))
         numero = request.args.get('numero')
@@ -14,6 +17,7 @@ def buscar_catastro():
 
         inmuebles = obtener_inmuebles(provincia, municipio, sigla, via, numero)
 
+        # Agrega refcat unida en cada inmueble
         for i in inmuebles:
             i['refcat'] = obtener_refcat_unida(i.get("rc"))
 
@@ -24,6 +28,9 @@ def buscar_catastro():
 
 @app.route('/api/catastro/filtrar', methods=['POST'])
 def filtrar_catastro():
+    """
+    Fase 2: filtra por planta, puerta, bloque, escalera
+    """
     try:
         datos = request.json
         inmuebles = datos.get('inmuebles', [])
@@ -34,6 +41,7 @@ def filtrar_catastro():
 
         filtrados = filtrar(inmuebles, bloque, escalera, planta, puerta)
 
+        # Asegura que todas tengan refcat unida
         for f in filtrados:
             f["refcat"] = obtener_refcat_unida(f.get("rc"))
 

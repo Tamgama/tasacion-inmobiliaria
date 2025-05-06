@@ -43,6 +43,45 @@
         </div>
         
         <button type="button" id="consultar-principal">Consultar</button>
+
+        <div id="extras-adicionales" class="oculto">
+          <h3>¿Tu vivienda tiene alguna de estas características?</h3>
+          <div class="botones-extras">
+            <button type="button" class="btn-extra" data-extra="ascensor">Ascensor</button>
+            <button type="button" class="btn-extra" data-extra="garaje">Garaje</button>
+            <button type="button" class="btn-extra" data-extra="terraza">Terraza</button>
+            <button type="button" class="btn-extra" data-extra="piscina">Piscina</button>
+          </div>
+
+          <div id="formulario-caracteristicas" style="margin-top: 20px;">
+            <h3>Características del inmueble</h3>
+            <label for="estado-conservacion">Estado de conservación:</label>
+            <select id="estado-conservacion" required>
+              <option value="normal">Normal</option>
+              <option value="excelente">Excelente</option>
+              <option value="malo">Malo</option>
+            </select>
+          
+            <label for="tipo-propiedad">Tipo de propiedad:</label>
+            <select id="tipo-propiedad" required>
+              <option value="piso">Piso</option>
+              <option value="dúplex">Dúplex</option>
+              <option value="chalet">Chalet</option>
+              <option value="otros">Otros</option>
+            </select>
+          
+            <label for="habitaciones">Número de habitaciones:</label>
+            <input type="number" id="habitaciones" min="1" max="10" value="3" required />
+          </div>
+          
+
+          <div id="resultado-valoracion" class="oculto" style="margin-top: 20px;">
+            <button id="calcular-valoracion">Calcular valor estimado</button>
+            <p id="valor-estimado" style="font-size: 1.2em; font-weight: bold; margin-top: 10px;"></p>
+          </div>
+          
+        </div>
+        
       </form>
       
   
