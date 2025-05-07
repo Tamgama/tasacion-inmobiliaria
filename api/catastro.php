@@ -1,33 +1,59 @@
 <?php
-header('Content-Type: application/json');
+header("Content-Type: application/json");
 
-// Obtener parámetros
-$via = isset($_GET['via']) ? escapeshellarg($_GET['via']) : null;
-$numero = isset($_GET['numero']) ? escapeshellarg($_GET['numero']) : null;
-$sigla = isset($_GET['sigla']) ? escapeshellarg($_GET['sigla']) : null;
-$refcat = isset($_GET['refcat']) ? escapeshellarg($_GET['refcat']) : null;
+function log_error($mensaje) {
+    $fecha = date('Y-m-d H:i:s');
+    file_put_contents(__DIR__ . "/catastro_error.log", "[$fecha] $mensaje\n", FILE_APPEND);
+}
 
-// Construir el comando de ejecución
+// Parámetros
+$via = $_GET['via'] ?? null;
+$numero = $_GET['numero'] ?? null;
+$sigla = $_GET['sigla'] ?? null;
+$refcat = $_GET['refcat'] ?? null;
+
 $cmd = "python3 catastro.py";
+$cache_key = "";
 
-// Si tenemos refcat, lo pasamos como argumento único
+// Construimos el comando y la clave de caché
 if ($refcat) {
-    $cmd .= " --refcat $refcat";
+    $cmd .= " --refcat " . escapeshellarg($refcat);
+    $cache_key = "refcat_" . $refcat;
 } elseif ($via && $numero && $sigla) {
-    $cmd .= " --via $via --numero $numero --sigla $sigla";
+    $cmd .= " --via " . escapeshellarg($via)
+         . " --numero " . escapeshellarg($numero)
+         . " --sigla " . escapeshellarg($sigla);
+    $cache_key = "via_" . $via . "_num_" . $numero . "_sigla_" . $sigla;
 } else {
-    echo json_encode(["error" => "Faltan parámetros obligatorios."]);
+    $msg = "❌ Faltan parámetros: via=$via, numero=$numero, sigla=$sigla, refcat=$refcat";
+    log_error($msg);
+    echo json_encode(["error" => "Faltan parámetros"]);
     exit;
 }
 
-// Ejecutar y capturar la salida
-exec($cmd, $output, $return_code);
+// Crear carpeta de caché si no existe
+$cache_dir = __DIR__ . "/cache";
+if (!is_dir($cache_dir)) {
+    mkdir($cache_dir, 0775, true);
+}
 
-if ($return_code !== 0) {
-    echo json_encode(["error" => "Error al ejecutar catastro.py", "codigo" => $return_code]);
+$cache_file = $cache_dir . "/" . md5($cache_key) . ".json";
+
+// Si existe en caché, lo devolvemos
+if (file_exists($cache_file)) {
+    echo file_get_contents($cache_file);
     exit;
 }
 
-// Unir salida y convertir en JSON
-$resultado = implode("\n", $output);
-echo $resultado;
+// Ejecutar Python si no hay caché
+exec($cmd . " 2>&1", $output, $status);
+
+if ($status !== 0) {
+    log_error("❌ Error al ejecutar: $cmd\nSalida: " . implode("\n", $output));
+    echo json_encode(["error" => "Error ejecutando el script Python"]);
+    exit;
+}
+
+// Guardar resultado en caché y devolver
+file_put_contents($cache_file, implode("\n", $output));
+echo implode("\n", $output);
