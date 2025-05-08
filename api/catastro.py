@@ -14,7 +14,7 @@ def consulta_dnp_loc(provincia, municipio, codigo, via, numero):
     via = normalizar_texto(via)
     url = (
         "https://ovc.catastro.meh.es/OVCServWeb/OVCWcfCallejero/COVCCallejero.svc/json/"
-        f"Consulta_DNPLOC?Provincia={provincia}&Municipio={municipio}&codigo={codigo}&Calle={via}&Numero={numero}"
+        f"Consulta_DNPLOC?Provincia={provincia}&Municipio={municipio}&Sigla={codigo}&Calle={via}&Numero={numero}"
     )
     print(f"🌐 URL DNPLOC: {url}")
     headers = {"User-Agent": "CatastroScript/1.0"}

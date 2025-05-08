@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', function () {
   btnConsultar.disabled = true;  
 
 
-  Papa.parse("callejero.csv", {
+  Papa.parse("./callejero/callejero.csv", {
     download: true,
     header: true,
     complete: function (results) {
@@ -201,12 +201,15 @@ document.addEventListener('DOMContentLoaded', function () {
       const planta = document.getElementById('planta').value;
       const puerta = document.getElementById('puerta').value;
   
+      console.log("⏳ Buscando con:", { bloque, planta, puerta, escalera });
+      console.log("🔍 En datos:", dataOriginal);
+
       const ref = dataOriginal.find(i =>
-        i.bloque === bloque &&
-        i.planta === planta &&
-        i.puerta === puerta &&
-        (!i.escalera || i.escalera === escalera)
-      );
+        (i.bloque || '').trim().toUpperCase() === bloque.trim().toUpperCase() &&
+        (i.planta || '').trim().toUpperCase() === planta.trim().toUpperCase() &&
+        (i.puerta || '').trim().toUpperCase() === puerta.trim().toUpperCase() &&
+        (!i.escalera || (i.escalera || '').trim().toUpperCase() === escalera.trim().toUpperCase())
+      );      
   
       if (ref?.refcat) {
         fetch(`./api/catastro.php?refcat=${ref.refcat}`)
