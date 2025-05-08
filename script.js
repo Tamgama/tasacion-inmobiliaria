@@ -7,17 +7,25 @@ document.addEventListener('DOMContentLoaded', function () {
   const inputNumero = document.getElementById('numero');
   const resultados = document.getElementById('resultados-catastro');
   const bloquePlantaPuertaDiv = document.getElementById('bloque-planta-puerta');
+  const btnConsultar = document.getElementById('consultar-principal');
+  btnConsultar.disabled = true;  
+
 
   Papa.parse("callejero.csv", {
     download: true,
     header: true,
     complete: function (results) {
       console.log("CSV cargado:", results.data); 
-      calles = results.data.map(fila => ({
-        via: fila.NombreVia || '',
-        sigla: fila.codigo || '',
-        normalizada: normalizarTexto(fila.NombrVia || '')
-      }));
+      calles = results.data.map(fila => {
+        const via = fila.NombreVia || fila.nombrevia || fila.via || '';
+        const codigo = fila.codigo || fila.codigo || '';
+        return {
+          via,
+          codigo,
+          normalizada: normalizarTexto(via)
+        };
+      });
+      
     }
   });
 
@@ -41,10 +49,11 @@ document.addEventListener('DOMContentLoaded', function () {
         item.className = "sugerencia";
         item.addEventListener('click', () => {
           inputDireccion.value = sug.via;
-          inputDireccion.dataset.sigla = sug.sigla;
           inputDireccion.dataset.via = sug.via;
-          resultados.innerHTML = '';
+          inputDireccion.dataset.codigo = sug.codigo;
           viaSeleccionada = sug;
+          resultados.innerHTML = '';
+          btnConsultar.disabled = false;
         });
         
         resultados.appendChild(item);
@@ -53,10 +62,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const numero = inputNumero.value.trim();
     if (valor.length >= 3 && numero) {
-      const sigla = viaSeleccionada?.sigla || deducirSigla(valor);
+      const codigo = viaSeleccionada?.codigo || deducirSigla(valor);
       const via = viaSeleccionada?.via || valor;
 
-      fetch(`/api/catastro/buscar?via=${encodeURIComponent(via)}&numero=${numero}&sigla=${sigla}`)
+      fetch(`/api/catastro/buscar?via=${encodeURIComponent(via)}&numero=${numero}&codigo=${codigo}`)
         .then(response => response.json())
         .then(data => {
           const inmuebles = data.inmuebles || [];
@@ -92,14 +101,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
   document.getElementById('consultar-principal').addEventListener('click', function () {
     const via = inputDireccion.dataset.via?.trim();     // ← Vía real sin barrio ni coma
-    const sigla = inputDireccion.dataset.sigla?.trim(); // ← Sigla del CSV
+    const codigo = inputDireccion.dataset.codigo?.trim(); // ← codigo del CSV
     const numero = inputNumero.value.trim();
     const bloque = document.getElementById('bloque').value.trim();
     const escalera = document.getElementById('escalera').value.trim();
     const planta = document.getElementById('planta').value.trim();
     const puerta = document.getElementById('puerta').value.trim();
   
-    if (!via || !numero || !sigla) {
+    if (!via || !numero || !codigo) {
       alert('Faltan datos para consultar el Catastro. Asegúrate de elegir una dirección del listado.');
       return;
     }
@@ -113,7 +122,7 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }
   
-    fetch(`./api/catastro.php?via=${encodeURIComponent(via)}&numero=${numero}&sigla=${sigla}`)
+    fetch(`./api/catastro.php?via=${encodeURIComponent(via)}&numero=${numero}&codigo=${codigo}`)
       .then(r => r.json())
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {

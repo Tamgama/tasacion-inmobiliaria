@@ -10,11 +10,11 @@ def normalizar_texto(texto):
     texto = re.sub(r'[^A-Z0-9 ]', '', texto)
     return re.sub(r'\s+', ' ', texto).strip()
 
-def consulta_dnp_loc(provincia, municipio, sigla, via, numero):
+def consulta_dnp_loc(provincia, municipio, codigo, via, numero):
     via = normalizar_texto(via)
     url = (
         "https://ovc.catastro.meh.es/OVCServWeb/OVCWcfCallejero/COVCCallejero.svc/json/"
-        f"Consulta_DNPLOC?Provincia={provincia}&Municipio={municipio}&Sigla={sigla}&Calle={via}&Numero={numero}"
+        f"Consulta_DNPLOC?Provincia={provincia}&Municipio={municipio}&codigo={codigo}&Calle={via}&Numero={numero}"
     )
     print(f"🌐 URL DNPLOC: {url}")
     headers = {"User-Agent": "CatastroScript/1.0"}
@@ -118,7 +118,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--via", type=str, help="Nombre de la vía")
     parser.add_argument("--numero", type=str, help="Número")
-    parser.add_argument("--sigla", type=str, help="Sigla de la vía")
+    parser.add_argument("--codigo", type=str, help="codigo de la vía")
     parser.add_argument("--refcat", type=str, help="Referencia catastral corta")
     args = parser.parse_args()
 
@@ -126,13 +126,21 @@ if __name__ == "__main__":
         data = consulta_dnprc(args.refcat)
         inmuebles = extraer_datos(data)
         print(json.dumps(inmuebles, ensure_ascii=False))
-    elif args.via and args.numero and args.sigla:
-        refcat_corta = consulta_dnp_loc("MURCIA", "MURCIA", args.sigla, args.via, args.numero)
+    elif args.via and args.numero and args.codigo:
+        refcat_corta = consulta_dnp_loc("MURCIA", "MURCIA", args.codigo, args.via, args.numero)
         if not refcat_corta:
             print(json.dumps([]))
         else:
             data = consulta_dnprc(refcat_corta)
             inmuebles = extraer_datos(data)
-            print(json.dumps(inmuebles, ensure_ascii=False))
+
+            # Extrae la lista completa de inmuebles si hay más de uno
+            inmuebles_extra = data.get("consulta_dnprcResult", {}).get("lrcdnp", {}).get("rcdnp", [])
+            if len(inmuebles_extra) > 1:
+                # ya vienen en extraer_datos, así que no hace falta hacer nada más
+                print(json.dumps(inmuebles, ensure_ascii=False))
+            else:
+                print(json.dumps(inmuebles, ensure_ascii=False))
+
     else:
         print(json.dumps({"error": "Parámetros insuficientes"}))

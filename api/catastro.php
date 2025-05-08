@@ -9,7 +9,7 @@ function log_error($mensaje) {
 // Parámetros
 $via = $_GET['via'] ?? null;
 $numero = $_GET['numero'] ?? null;
-$sigla = $_GET['sigla'] ?? null;
+$codigo = $_GET['codigo'] ?? null;
 $refcat = $_GET['refcat'] ?? null;
 
 $cmd = "python3 catastro.py";
@@ -19,13 +19,13 @@ $cache_key = "";
 if ($refcat) {
     $cmd .= " --refcat " . escapeshellarg($refcat);
     $cache_key = "refcat_" . $refcat;
-} elseif ($via && $numero && $sigla) {
+} elseif ($via && $numero && $codigo) {
     $cmd .= " --via " . escapeshellarg($via)
          . " --numero " . escapeshellarg($numero)
-         . " --sigla " . escapeshellarg($sigla);
-    $cache_key = "via_" . $via . "_num_" . $numero . "_sigla_" . $sigla;
+         . " --codigo " . escapeshellarg($codigo);
+    $cache_key = "via_" . $via . "_num_" . $numero . "_codigo_" . $codigo;
 } else {
-    $msg = "❌ Faltan parámetros: via=$via, numero=$numero, sigla=$sigla, refcat=$refcat";
+    $msg = "❌ Faltan parámetros: via=$via, numero=$numero, codigo=$codigo, refcat=$refcat";
     log_error($msg);
     echo json_encode(["error" => "Faltan parámetros"]);
     exit;
