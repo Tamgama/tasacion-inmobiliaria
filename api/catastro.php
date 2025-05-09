@@ -22,7 +22,7 @@ if ($refcat) {
 } elseif ($via && $numero && $codigo) {
     $cmd .= " --via " . escapeshellarg($via)
          . " --numero " . escapeshellarg($numero)
-         . " --codigo " . escapeshellarg($codigo);
+         . " --sigla " . escapeshellarg($codigo);
     $cache_key = "via_" . $via . "_num_" . $numero . "_codigo_" . $codigo;
 } else {
     $msg = "❌ Faltan parámetros: via=$via, numero=$numero, codigo=$codigo, refcat=$refcat";
